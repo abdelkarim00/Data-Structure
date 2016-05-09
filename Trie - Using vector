@@ -1,0 +1,21 @@
+struct trie{
+  struct Node{int nxt, cnt; Node():nxt(-1),cnt(0){} };
+  vector<vector<Node> > edges;   
+  trie(){ edges.push_back(vector<Node> (26) ); }
+  int add(){
+      edges.push_back(vector<Node> (26) );
+      return edges.size()-1;
+  }
+  void insert(const string &str){
+      int cur = 0;
+      for(int i=0;i<str.size();i++){
+          int nxt = edges[cur][str[i]-'a'].nxt;
+          if(nxt == -1){
+              edges[cur][str[i]-'a'].nxt = add(); 
+              nxt = edges[cur][str[i]-'a'].nxt;
+          }
+          edges[cur][str[i]-'a'].cnt++;
+          cur = nxt;
+      }
+  }
+};
