@@ -1,0 +1,199 @@
+/*
+this treap can do
+1-delete sub-array
+2-reverse sub-array
+3-get the value by index in an array
+
+all of this operations in O(lg(n)).
+*/
+
+#include<bits/stdc++.h>
+using namespace std;
+
+struct Node{
+	int cnt,val,prior;
+	Node* par;
+	Node* l, * r;
+	bool is_rev;
+	~Node(){
+		delete l;
+		delete r;
+	}
+	Node():cnt(1),val(-1),prior(rand()%1000000007),par(0),l(0),r(0),is_rev(0){}
+	Node(int val):cnt(1),val(val),prior(rand()%1000000007),par(0),l(0),r(0),is_rev(0){}
+};
+
+
+void prob(Node * root){
+	if(root && root->is_rev){
+		root->is_rev =0;
+		swap(root->l,root->r);
+		if(root->l)root->l->is_rev ^=1;
+		if(root->r)root->r->is_rev ^= 1;
+	}
+}
+
+int get_new_cnt(Node * root){
+	int ans = 1;
+	if(root->l)ans+=root->l->cnt;
+	if(root->r)ans+=root->r->cnt;
+	return ans;
+}
+
+void split(Node* root,int index, Node* &l, Node* &r, Node* lpar=0, Node*rpar=0){
+	prob(root);
+	if(!root)
+		l = r = 0;
+	else {
+		int cnt;
+		if(!root->l)cnt = 0;
+		else cnt = root->l->cnt;
+
+		if(cnt < index){
+			l = root;
+			split(root->r,index-cnt-1,l->r,r,l,rpar);
+			l->cnt = get_new_cnt(l);
+			l->par = lpar;
+		}else {
+			r = root;
+			split(root->l,index,l,r->l,lpar,r);
+			r->cnt = get_new_cnt(r);
+			r->par = rpar;
+		}
+	}
+}
+
+void insert(Node * &root, Node * new_node, int index){
+	prob(root);
+	if(!root){
+		root = new_node;
+		return;
+	}
+	if(root->prior <= new_node->prior){
+		new_node->par = root->par;
+		split(root,index,new_node->l,new_node->r);
+		root = new_node;
+		if(root->l)root->l->par = root;
+		if(root->r)root->r->par = root;
+		root->cnt = get_new_cnt(root);
+	}else {
+		int cnt;
+		if(!root->l)cnt = 0;
+		else cnt = root->l->cnt;
+		new_node->par = root;
+		if(index <= cnt){
+			insert(root->l,new_node,index);
+		}else{
+			insert(root->r,new_node,index-cnt-1);
+		}
+		root->cnt = get_new_cnt(root);
+	}
+}
+
+
+void merge(Node * &root, Node *l, Node *r, Node * par=0){
+	if(!l || !r){
+		if(l)root = l;
+		else root = r;
+	}else{
+		prob(l);
+		prob(r);
+		if(l->prior > r->prior){
+			root = l;
+			merge(root->r,l->r,r,root);
+		}else{
+			root = r;
+			merge(root->l,l,r->l,root);
+		}
+	}
+	if(root)root->par = par;
+	if(root)root->cnt = get_new_cnt(root);
+	prob(root);
+}
+
+
+void matgeeb_el_root_ba2ah(Node * root){
+	if(root){
+		matgeeb_el_root_ba2ah(root->par);
+		prob(root);
+	}
+}
+
+int matgeeb_el_root_tane_kedah(Node *root, bool ok=1){
+	if(root){
+		int add = 1;
+		if(root->l)add+=root->l->cnt;
+		return matgeeb_el_root_tane_kedah(root->par, root->par? root->par->r == root:0  ) + ok*add;
+	}return 0;
+}
+
+void remove_segment(Node* &root , int l,int r){
+	Node * part1 = 0, * part2 = 0;
+	Node * rem = 0;
+	split(root,l,part1,rem);
+	root = rem; rem=0;
+	split(root,r-l+1,part2,rem);
+	root=0;
+	merge(root,part1,rem);
+}
+
+void display(Node * root){
+	if(root){
+		cout<<root->val<<" " << root->cnt;
+		if(root->par)cout<<" " << root->par->val;
+		cout<<endl;
+		display(root->l);
+		display(root->r);
+	}else{
+		cout<<"NULL"<<endl;
+	}
+}
+
+void swap_segment(Node * &root, int l1,int r1, int l2,int r2){
+	Node * part1, *part2, *part3, *part4, *rem,*tmp;
+	split(root,l1,part1,rem);
+	root = rem, rem=0;
+	split(root,r1-l1+1,part2,rem);
+	root = rem, rem=0;
+	int len = r1-l1+1;
+	split(root,l2-len,part3,rem);
+	root = rem, rem=0;
+	split(root,r2-l2+1,part4,rem);
+	root = 0;
+	merge(root,part1,part4);
+	tmp = root;
+	root = 0;
+	merge(root,tmp,part3);
+	tmp = root;
+	root = 0;
+	merge(root,tmp,part2);
+	tmp = root;
+	root = 0;
+	merge(root,tmp,rem);
+}
+
+void reverse_segment(Node * &root, int l,int r){
+	Node *part1, *part2, *rem,*tmp;
+	split(root,l,part1,rem);
+	root = rem;
+	rem = 0;
+	split(root,r-l+1,part2,rem);
+	part2->is_rev ^= 1;
+	merge(root,part1,part2);
+	tmp = root;
+	root = 0;
+	merge(root,tmp,rem);
+}
+
+int get_by_index(Node*root, int index){
+	prob(root);
+	if(!root)return -1;
+	int cnt;
+	if(!root->l)cnt=0;
+	else cnt = root->l->cnt;
+	if(cnt == index)return root->val;
+	if(cnt < index){
+		return get_by_index(root->r,index-cnt-1);
+	}
+	return get_by_index(root->l,index);
+}
