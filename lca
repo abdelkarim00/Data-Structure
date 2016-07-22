@@ -1,0 +1,54 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+//+18
+
+typedef long long ll;
+
+const ll inf = 1<<30;
+
+#define rep(i,n)    for(int i=0;i<n;i++)
+#define siz(s  )    (int)(s.size())
+#define one(n,i)    ((n>>i)&1)
+
+const int MAXN = 200002;
+int len;
+int up[20][MAXN] ;
+int tin [MAXN] ;
+int tout[MAXN];
+int tme;
+
+void dfs(const vector<vector<int> > & tree, int u, int p) {
+	tin[u] = tme++;
+	up[0][u] = p;
+	for (int i = 1; i < len; i++)
+  		up[i][u] = up[i - 1][up[i - 1][u]];
+	for (int i=0;i<tree[u].size();i++){
+  		int v = tree[u][i];
+  		if (v != p)
+    		dfs(tree, v, u);
+	}
+	tout[u] = tme++;
+}
+
+void LcaSparseTable(const vector<vector<int> > & tree , int root) {
+	int n = tree.size();
+	len = 1;
+	while ((1 << len) <= n) ++len;
+	dfs(tree, root, root);
+}
+
+bool isParent(int parent, int child) {
+	return tin[parent] <= tin[child] && tout[child] <= tout[parent];
+}
+
+int lca(int a, int b) {
+	if (isParent(a, b))
+  		return a;
+	if (isParent(b, a))
+  		return b;
+	for (int i = len - 1; i >= 0; i--)
+  		if (!isParent(up[i][a], b))
+    		a = up[i][a];
+	return up[0][a];
+}
